@@ -10,6 +10,9 @@ crate-type = ["cdylib"]
 [dependencies]
 ndk-glue = "0.2"
 
+[build-dependencies]
+cc = { version = "1", features = ["parallel"] }
+
 [package.metadata.android]
 # Name of your APK as shown in the app drawer and in the app switcher
 apk_label = "quest_test"
