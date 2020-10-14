@@ -1,0 +1,69 @@
+[package]
+name = "quest_test"
+version = "0.1.0"
+authors = ["Jonathan Nilsson <jonathan@voysys.se>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ndk-glue = "0.2"
+
+[package.metadata.android]
+# Name of your APK as shown in the app drawer and in the app switcher
+apk_label = "quest_test"
+
+# The target Android API level.
+target_sdk_version = 26
+min_sdk_version = 26
+
+# Virtual path your application's icon for any mipmap level.
+# If not specified, an icon will not be included in the APK.
+# icon = "@mipmap/ic_la1uncher"
+
+# If set to true, makes the app run in full-screen, by adding the following line
+# as an XML attribute to the manifest's <application> tag :
+#     android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen
+# Defaults to false.
+#fullscreen = false
+
+# Set the minimum required OpenGL ES version.
+# Defaults to [3, 1]
+opengles_version = [3, 1]
+
+# Sets the applications screenOrientation.
+# See https://developer.android.com/guide/topics/manifest/activity-element
+# and look for `android:screenOrientation` for possible values
+# Defaults to "unspecified" which makes the system pick an orientation and
+# doesn't give you help with rotation.
+# orientation = "sensorLandscape"
+
+# Adds a uses-feature element to the manifest
+# Supported keys: name, required
+# See https://developer.android.com/guide/topics/manifest/uses-feature-element
+#[[package.metadata.android.feature]]
+#name = "android.hardware.camera"
+
+#[[package.metadata.android.feature]]
+#name = "android.hardware.vulkan.level"
+#version = "1"
+
+# Adds a uses-permission element to the manifest.
+# Note that android_version 23 and higher, Android requires the application to request permissions at runtime.
+# There is currently no way to do this using a pure NDK based application.
+# See https://developer.android.com/guide/topics/manifest/uses-permission-element
+#[[package.metadata.android.permission]]
+#name = "android.permission.WRITE_EXTERNAL_STORAGE"
+#max_sdk_version = 18
+
+# Specifies the array of targets to build for.
+build_targets = [ "aarch64-linux-android" ]
+
+# Path to your application's resources folder.
+# If not specified, resources will not be included in the APK
+#res = "path/to/res_folder"
+
+# Path to the folder containing your application's assets.
+# If not specified, assets will not be included in the APK
+#assets = "path/to/assets_folder"
