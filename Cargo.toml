@@ -17,6 +17,8 @@ cc = { version = "1", features = ["parallel"] }
 # Name of your APK as shown in the app drawer and in the app switcher
 apk_label = "quest_test"
 
+launchMode = "singleTask"
+
 # The target Android API level.
 target_sdk_version = 26
 min_sdk_version = 26
@@ -29,7 +31,7 @@ min_sdk_version = 26
 # as an XML attribute to the manifest's <application> tag :
 #     android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen
 # Defaults to false.
-#fullscreen = false
+fullscreen = true
 
 # Set the minimum required OpenGL ES version.
 # Defaults to [3, 1]
@@ -40,17 +42,34 @@ opengles_version = [3, 1]
 # and look for `android:screenOrientation` for possible values
 # Defaults to "unspecified" which makes the system pick an orientation and
 # doesn't give you help with rotation.
-# orientation = "sensorLandscape"
+ orientation = "landscape"
 
 # Adds a uses-feature element to the manifest
 # Supported keys: name, required
 # See https://developer.android.com/guide/topics/manifest/uses-feature-element
-#[[package.metadata.android.feature]]
-#name = "android.hardware.camera"
+[[package.metadata.android.feature]]
+name = "android.hardware.vr.headtracking"
 
-#[[package.metadata.android.feature]]
-#name = "android.hardware.vulkan.level"
-#version = "1"
+[[package.metadata.android.feature]]
+name = "android.permission.INTERNET"
+
+[[package.metadata.android.feature]]
+name = "android.permission.MODIFY_AUDIO_SETTINGS"
+
+[[package.metadata.android.feature]]
+name = "android.permission.ACCESS_NETWORK_STATE"
+
+[[package.metadata.android.application_metadatas]]
+name = "com.samsung.android.vr.application.mode"
+value = "vr_only"
+
+[[package.metadata.android.application_metadatas]]
+name = "com.oculus.supportedDevices"
+value = "all"
+
+[[package.metadata.android.activity_metadatas]]
+name = "com.oculus.vr.focusaware"
+value = "true"
 
 # Adds a uses-permission element to the manifest.
 # Note that android_version 23 and higher, Android requires the application to request permissions at runtime.
