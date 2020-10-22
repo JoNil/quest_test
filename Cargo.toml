@@ -69,4 +69,4 @@ build_targets = [ "aarch64-linux-android" ]
 
 # Path to the folder containing your application's assets.
 # If not specified, assets will not be included in the APK
-#assets = "path/to/assets_folder"
+assets = "assets"
