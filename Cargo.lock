@@ -199,7 +199,10 @@ name = "quest_test"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "jni-sys",
+ "ndk",
  "ndk-glue",
+ "ndk-sys",
 ]
 
 [[package]]

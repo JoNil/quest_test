@@ -7,10 +7,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vr_api_path = env::current_dir()?.join("thirdparty/VrApi/Include");
 
     cc::Build::new()
-        .file("cpp/VrCubeWorld_NativeActivity.c")
+        .file("cpp/vr_main.c")
         .include(&native_app_glue_path)
         .include(&vr_api_path)
-        .compile("vrcubeworld");
+        .compile("vr_main");
 
     Ok(())
 }

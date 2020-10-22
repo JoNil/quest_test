@@ -1,8 +1,9 @@
 /************************************************************************************
 
-Filename    :   VrCubeWorld_NativeActivity.c
-Content     :   This sample uses the Android NativeActivity class. This sample does
-                not use the application framework.
+Filename    :   VrCubeWorld_SurfaceView.c
+Content     :   This sample uses a plain Android SurfaceView and handles all
+                Activity and Surface life cycle events in native code. This sample
+                does not use the application framework.
                 This sample only uses the VrApi.
 Created     :   March, 2015
 Authors     :   J.M.P. van Waveren
@@ -19,9 +20,8 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 #include <pthread.h>
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
-#include <android/window.h>            // for AWINDOW_FLAG_KEEP_SCREEN_ON
 #include <android/native_window_jni.h> // for native window JNI
-#include <android_native_app_glue.h>
+#include <android/input.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -58,9 +58,9 @@ typedef void(GL_APIENTRY *PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC)(
 #endif
 
 #if !defined(GL_OVR_multiview)
-static const int GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR = 0x9630;
-static const int GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR = 0x9632;
-static const int GL_MAX_VIEWS_OVR = 0x9631;
+/// static const int GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR       = 0x9630;
+/// static const int GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR = 0x9632;
+/// static const int GL_MAX_VIEWS_OVR                                      = 0x9631;
 typedef void(GL_APIENTRY *PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)(
     GLenum target,
     GLenum attachment,
@@ -703,7 +703,8 @@ static bool ovrProgram_Create(
     GL(glAttachShader(program->Program, program->FragmentShader));
 
     // Bind the vertex attribute locations.
-    for (int i = 0; i < sizeof(ProgramVertexAttributes) / sizeof(ProgramVertexAttributes[0]); i++)
+    for (int i = 0; i < (int)(sizeof(ProgramVertexAttributes) / sizeof(ProgramVertexAttributes[0]));
+         i++)
     {
         GL(glBindAttribLocation(
             program->Program,
@@ -725,7 +726,7 @@ static bool ovrProgram_Create(
 
     // Get the uniform locations.
     memset(program->UniformLocation, -1, sizeof(program->UniformLocation));
-    for (int i = 0; i < sizeof(ProgramUniforms) / sizeof(ProgramUniforms[0]); i++)
+    for (int i = 0; i < (int)(sizeof(ProgramUniforms) / sizeof(ProgramUniforms[0])); i++)
     {
         const int uniformIndex = ProgramUniforms[i].index;
         if (ProgramUniforms[i].type == UNIFORM_TYPE_BUFFER)
@@ -1813,6 +1814,7 @@ typedef struct
     int GpuLevel;
     int MainThreadTid;
     int RenderThreadTid;
+    bool GamePadBackButtonDown;
 #if MULTI_THREADED
     ovrRenderThread RenderThread;
 #else
@@ -1836,6 +1838,7 @@ static void ovrApp_Clear(ovrApp *app)
     app->GpuLevel = 2;
     app->MainThreadTid = 0;
     app->RenderThreadTid = 0;
+    app->GamePadBackButtonDown = false;
     app->UseMultiview = true;
 
     ovrEgl_Clear(&app->Egl);
@@ -1855,8 +1858,8 @@ static void ovrApp_HandleVrModeChanges(ovrApp *app)
         if (app->Ovr == NULL)
         {
             ovrModeParms parms = vrapi_DefaultModeParms(&app->Java);
-            // No need to reset the FLAG_FULLSCREEN window flag when using a View
-            parms.Flags &= ~VRAPI_MODE_FLAG_RESET_WINDOW_FULLSCREEN;
+            // Must reset the FLAG_FULLSCREEN window flag when using a SurfaceView
+            parms.Flags |= VRAPI_MODE_FLAG_RESET_WINDOW_FULLSCREEN;
 
             parms.Flags |= VRAPI_MODE_FLAG_NATIVE_WINDOW;
             parms.Display = (size_t)app->Egl.Display;
@@ -1918,6 +1921,24 @@ static void ovrApp_HandleVrModeChanges(ovrApp *app)
 
 static void ovrApp_HandleInput(ovrApp *app) {}
 
+static int ovrApp_HandleKeyEvent(ovrApp *app, const int keyCode, const int action)
+{
+    // Handle back button.
+    if (keyCode == AKEYCODE_BACK || keyCode == AKEYCODE_BUTTON_B)
+    {
+        if (action == AKEY_EVENT_ACTION_DOWN)
+        {
+            app->GamePadBackButtonDown = true;
+        }
+        else if (action == AKEY_EVENT_ACTION_UP)
+        {
+            app->GamePadBackButtonDown = false;
+        }
+        return 1;
+    }
+    return 0;
+}
+
 static void ovrApp_HandleVrApiEvents(ovrApp *app)
 {
     ovrEventDataBuffer eventDataBuffer = {};
@@ -1966,92 +1987,31 @@ static void ovrApp_HandleVrApiEvents(ovrApp *app)
 /*
 ================================================================================
 
-Native Activity
+ovrAppThread
 
 ================================================================================
 */
 
-/**
- * Process the next main command.
- */
-static void app_handle_cmd(struct android_app *app, int32_t cmd)
+enum
 {
-    ovrApp *appState = (ovrApp *)app->userData;
+    MESSAGE_ON_CREATE,
+    MESSAGE_ON_START,
+    MESSAGE_ON_RESUME,
+    MESSAGE_ON_PAUSE,
+    MESSAGE_ON_STOP,
+    MESSAGE_ON_DESTROY,
+    MESSAGE_ON_SURFACE_CREATED,
+    MESSAGE_ON_SURFACE_DESTROYED,
+    MESSAGE_ON_KEY_EVENT,
+    MESSAGE_ON_TOUCH_EVENT
+};
 
-    switch (cmd)
-    {
-    // There is no APP_CMD_CREATE. The ANativeActivity creates the
-    // application thread from onCreate(). The application thread
-    // then calls android_main().
-    case APP_CMD_START:
-    {
-        ALOGV("onStart()");
-        ALOGV("    APP_CMD_START");
-        break;
-    }
-    case APP_CMD_RESUME:
-    {
-        ALOGV("onResume()");
-        ALOGV("    APP_CMD_RESUME");
-        appState->Resumed = true;
-        break;
-    }
-    case APP_CMD_PAUSE:
-    {
-        ALOGV("onPause()");
-        ALOGV("    APP_CMD_PAUSE");
-        appState->Resumed = false;
-        break;
-    }
-    case APP_CMD_STOP:
-    {
-        ALOGV("onStop()");
-        ALOGV("    APP_CMD_STOP");
-        break;
-    }
-    case APP_CMD_DESTROY:
-    {
-        ALOGV("onDestroy()");
-        ALOGV("    APP_CMD_DESTROY");
-        appState->NativeWindow = NULL;
-        break;
-    }
-    case APP_CMD_INIT_WINDOW:
-    {
-        ALOGV("surfaceCreated()");
-        ALOGV("    APP_CMD_INIT_WINDOW");
-        appState->NativeWindow = app->window;
-        break;
-    }
-    case APP_CMD_TERM_WINDOW:
-    {
-        ALOGV("surfaceDestroyed()");
-        ALOGV("    APP_CMD_TERM_WINDOW");
-        appState->NativeWindow = NULL;
-        break;
-    }
-    }
-}
-
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-void android_main(struct android_app *app)
+void vr_main(JavaVM *JavaVm, jobject ActivityObject, ANativeWindow *NativeWindow)
 {
-    ALOGV("----------------------------------------------------------------");
-    ALOGV("android_app_entry()");
-    ALOGV("    android_main()");
-
-    ALOGE("I'm ALIVE");
-
-    ANativeActivity_setWindowFlags(app->activity, AWINDOW_FLAG_KEEP_SCREEN_ON, 0);
-
     ovrJava java;
-    java.Vm = app->activity->vm;
+    java.Vm = JavaVm;
     (*java.Vm)->AttachCurrentThread(java.Vm, &java.Env, NULL);
-    java.ActivityObject = app->activity->clazz;
+    java.ActivityObject = ActivityObject;
 
     // Note that AttachCurrentThread will reset the thread name.
     prctl(PR_SET_NAME, (long)"OVR::Main", 0, 0, 0);
@@ -2067,6 +2027,9 @@ void android_main(struct android_app *app)
     ovrApp appState;
     ovrApp_Clear(&appState);
     appState.Java = java;
+
+    // This app will handle android gamepad events itself.
+    vrapi_SetPropertyInt(&appState.Java, VRAPI_EAT_NATIVE_GAMEPAD_EVENTS, 0);
 
     ovrEgl_CreateContext(&appState.Egl, NULL);
 
@@ -2089,33 +2052,60 @@ void android_main(struct android_app *app)
     ovrRenderer_Create(&appState.Renderer, &java, appState.UseMultiview);
 #endif
 
-    app->userData = &appState;
-    app->onAppCmd = app_handle_cmd;
-
     const double startTime = GetTimeInSeconds();
 
-    while (app->destroyRequested == 0)
+    for (bool destroyed = false; destroyed == false;)
     {
-        // Read all pending events.
-        for (;;)
-        {
-            int events;
-            struct android_poll_source *source;
-            const int timeoutMilliseconds =
-                (appState.Ovr == NULL && app->destroyRequested == 0) ? -1 : 0;
-            if (ALooper_pollAll(timeoutMilliseconds, NULL, &events, (void **)&source) < 0)
-            {
+        /*for (;;) {
+            ovrMessage message;
+            const bool waitForMessages = (appState.Ovr == NULL && destroyed == false);
+            if (!ovrMessageQueue_GetNextMessage(
+                    &appThread->MessageQueue, &message, waitForMessages)) {
                 break;
             }
 
-            // Process this event.
-            if (source != NULL)
-            {
-                source->process(app, source);
+            switch (message.Id) {
+                case MESSAGE_ON_CREATE: {
+                    break;
+                }
+                case MESSAGE_ON_START: {
+                    break;
+                }
+                case MESSAGE_ON_RESUME: {
+                    appState.Resumed = true;
+                    break;
+                }
+                case MESSAGE_ON_PAUSE: {
+                    appState.Resumed = false;
+                    break;
+                }
+                case MESSAGE_ON_STOP: {
+                    break;
+                }
+                case MESSAGE_ON_DESTROY: {
+                    appState.NativeWindow = NULL;
+                    destroyed = true;
+                    break;
+                }
+                case MESSAGE_ON_SURFACE_CREATED: {
+                    appState.NativeWindow = (ANativeWindow*)ovrMessage_GetPointerParm(&message, 0);
+                    break;
+                }
+                case MESSAGE_ON_SURFACE_DESTROYED: {
+                    appState.NativeWindow = NULL;
+                    break;
+                }
+                case MESSAGE_ON_KEY_EVENT: {
+                    ovrApp_HandleKeyEvent(
+                        &appState,
+                        ovrMessage_GetIntegerParm(&message, 0),
+                        ovrMessage_GetIntegerParm(&message, 1));
+                    break;
+                }
             }
 
             ovrApp_HandleVrModeChanges(&appState);
-        }
+        }*/
 
         // We must read from the event queue with regular frequency.
         ovrApp_HandleVrApiEvents(&appState);
