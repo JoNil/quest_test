@@ -6,6 +6,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let native_app_glue_path = ndk_root.join(Path::new("sources/android/native_app_glue"));
     let vr_api_path = env::current_dir()?.join("thirdparty/VrApi/Include");
 
+    println!("cargo:rustc-cdylib-link-arg=-Lassets/lib");
+    println!("cargo:rustc-cdylib-link-arg=-lvrapi");
+
     cc::Build::new()
         .file("cpp/vr_main.c")
         .include(&native_app_glue_path)

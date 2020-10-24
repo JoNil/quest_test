@@ -8,6 +8,8 @@ extern "C" {
 
 #[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {
+    println!("ALIVE!!");
+
     let native_activity = ndk_glue::native_activity();
     let native_window = ndk_glue::native_window();
     unsafe {
