@@ -1,4 +1,5 @@
 use jni_sys::{jobject, JavaVM};
+use ndk_glue::Event;
 use ndk_sys::ANativeWindow;
 use std::ffi::c_void;
 
@@ -10,8 +11,21 @@ extern "C" {
 pub fn main() {
     println!("ALIVE!!");
 
+    loop {
+        match ndk_glue::poll_events() {
+            Some(Event::WindowCreated) => {
+                break;
+            }
+            Some(event) => {
+                println!("{:?}", event);
+            }
+            _ => (),
+        }
+    }
+
     let native_activity = ndk_glue::native_activity();
     let native_window = ndk_glue::native_window();
+
     unsafe {
         vr_main(
             native_activity.vm(),
