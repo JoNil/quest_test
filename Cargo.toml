@@ -24,7 +24,6 @@ fullscreen = true
 opengles_version = [3, 1]
 orientation = "landscape"
 build_targets = [ "aarch64-linux-android" ]
-assets = "assets"
 
 [[package.metadata.android.feature]]
 name = "android.hardware.vr.headtracking"
