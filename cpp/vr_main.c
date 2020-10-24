@@ -1745,6 +1745,7 @@ void vr_main(JavaVM *JavaVm, jobject ActivityObject, ANativeWindow *NativeWindow
     appState.GpuLevel = GPU_LEVEL;
     appState.MainThreadTid = gettid();
     appState.Resumed = true;
+    appState.NativeWindow = NativeWindow;
 
     ovrRenderer_Create(&appState.Renderer, &java, appState.UseMultiview);
 
@@ -1752,56 +1753,6 @@ void vr_main(JavaVM *JavaVm, jobject ActivityObject, ANativeWindow *NativeWindow
 
     for (bool destroyed = false; destroyed == false;)
     {
-        /*for (;;) {
-            ovrMessage message;
-            const bool waitForMessages = (appState.Ovr == NULL && destroyed == false);
-            if (!ovrMessageQueue_GetNextMessage(
-                    &appThread->MessageQueue, &message, waitForMessages)) {
-                break;
-            }
-
-            switch (message.Id) {
-                case MESSAGE_ON_CREATE: {
-                    break;
-                }
-                case MESSAGE_ON_START: {
-                    break;
-                }
-                case MESSAGE_ON_RESUME: {
-                    appState.Resumed = true;
-                    break;
-                }
-                case MESSAGE_ON_PAUSE: {
-                    appState.Resumed = false;
-                    break;
-                }
-                case MESSAGE_ON_STOP: {
-                    break;
-                }
-                case MESSAGE_ON_DESTROY: {
-                    appState.NativeWindow = NULL;
-                    destroyed = true;
-                    break;
-                }
-                case MESSAGE_ON_SURFACE_CREATED: {
-                    appState.NativeWindow = (ANativeWindow*)ovrMessage_GetPointerParm(&message, 0);
-                    break;
-                }
-                case MESSAGE_ON_SURFACE_DESTROYED: {
-                    appState.NativeWindow = NULL;
-                    break;
-                }
-                case MESSAGE_ON_KEY_EVENT: {
-                    ovrApp_HandleKeyEvent(
-                        &appState,
-                        ovrMessage_GetIntegerParm(&message, 0),
-                        ovrMessage_GetIntegerParm(&message, 1));
-                    break;
-                }
-            }
-
-            ovrApp_HandleVrModeChanges(&appState);
-        }*/
 
         ovrApp_HandleVrModeChanges(&appState);
 
@@ -1812,6 +1763,7 @@ void vr_main(JavaVM *JavaVm, jobject ActivityObject, ANativeWindow *NativeWindow
 
         if (appState.Ovr == NULL)
         {
+            ALOGV("appState.Ovr == NULL");
             continue;
         }
 
