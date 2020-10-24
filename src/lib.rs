@@ -14,6 +14,7 @@ pub fn main() {
     loop {
         match ndk_glue::poll_events() {
             Some(Event::WindowCreated) => {
+                println!("{:?}", Event::WindowCreated);
                 break;
             }
             Some(event) => {

@@ -1744,6 +1744,7 @@ void vr_main(JavaVM *JavaVm, jobject ActivityObject, ANativeWindow *NativeWindow
     appState.CpuLevel = CPU_LEVEL;
     appState.GpuLevel = GPU_LEVEL;
     appState.MainThreadTid = gettid();
+    appState.Resumed = true;
 
     ovrRenderer_Create(&appState.Renderer, &java, appState.UseMultiview);
 
