@@ -8,6 +8,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("cargo:rustc-link-search=lib");
     println!("cargo:rustc-cdylib-link-arg=-lvrapi");
+    println!("cargo:rustc-cdylib-link-arg=-lEGL");
+    println!("cargo:rustc-cdylib-link-arg=-lGLESv3");
 
     cc::Build::new()
         .file("cpp/vr_main.c")
